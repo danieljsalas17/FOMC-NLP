@@ -37,9 +37,9 @@ plt.style.use('ggplot')
 directory = '~/Projects/Fed-NLP-Scrape/'
 
 # better TfidfVectorizer
-english_stemmer = Stemmer.Stemmer('en')
 class StemmedTfidfVectorizer(TfidfVectorizer):
     def build_analyzer(self):
+        english_stemmer = Stemmer.Stemmer('en')
         analyzer = super(TfidfVectorizer, self).build_analyzer()
         return lambda doc: english_stemmer.stemWords(analyzer(doc))
 
@@ -74,29 +74,42 @@ def get_sample_df(dependent_vars=None,tfidf=False):
     # read data into dataframe
     df = pd.read_json(directory+'data/fed_sample_statements.json')
     df.sort_index(inplace=True)
-    df.rename({'data':'date'},axis='columns')
+    df.rename({'data':'date'},axis='columns',inplace=True)
     df.date = pd.to_datetime(df.date)
 
     # add dependent variables
     if type(dependent_vars)==type(''):
         # str case: only one dep_var added
         add_dependent_var(df,dep_var)
-    elif: type(dependent_vars)==type(['','']):
+    elif type(dependent_vars)==type(['','']):
         # list case: at least one dep_var added
         for dep_var in dependent_vars:
             add_dependent_var(df,dep_var)
-    elif: type(dependent_vars)==type({'': (1,1)}):
+    elif type(dependent_vars)==type({'': (1,1)}):
         # dictionary case: at least one dep_var and custom lags added
         for dep_var,lags in dependent_vars.items():
             add_dependent_var(df,dep_var,back_lags=lags[0],fwd_lags=lags[1])
     # convert text data to tfidf
     if (type(tfidf)==type(True)):
         if tfidf:
-            # IMPLEMENT THIS: default TfidfVectorizer
-            tfidf=1
+            vectorizer = StemmedTfidfVectorizer(stop_words='english',
+                                                strip_accents='ascii')
+            # create tfidf sparse matrix
+            tfidf_sparse = vectorizer.fit_transform(df.doc)
+
+            # create column names for tfidf features
+            tfidf_colnames = vectorizer.get_feature_names()
+            for i,feature_name in enumerate(tfidf_colnames):
+                tfidf_colnames[i] = 'tfidf_'+feature_name
+
+            # create tfidf dataframe
+            tfidf_df = pd.DataFrame(data=tfidf_sparse.toarray(),
+                                    columns=tfidf_colnames)
+            # concatenate tfidf dataframe to base dataframe
+            df = pd.concat([df,tfidf_df],axis=1)
     else:
         # custom TfidfVectorizer
-        tfidf =1
+        tfidf = 1
     return df
 
 # Dependent Variables Dataset Names
@@ -141,26 +154,58 @@ def add_dependent_var(df,dep_var,back_lags=0,fwd_lags=0):
 
     # match dep_var to df
     df.merge(dep_df,on='date')
-    df.rename({'val':dep_var},axis='columns')
+    df.rename({'val':dep_var},axis='columns',inplace=True)
 
     # backward lags
     for back_lag in range(1,back_lags+1):
         dep_df.date = dep_df.date + timedelta(days=back_lag)
         df.merge(dep_df,on='date')
-        df.rename({'val':dep_var+'_B{}'.format(back_lag))
+        df.rename({'val':dep_var+'_B{}'.format(back_lag)},inplace=True)
     # forward lags
     for fwd_lag in range(1,fwd_lags+1):
         dep_df.date = dep_df.date + timedelta(days=fwd_lag)
         df.merge(dep_df,on='date')
-        df.rename({'val':dep_var+'_F{}'.format(fwd_lag))
+        df.rename({'val':dep_var+'_F{}'.format(fwd_lag)},inplace=True)
 
     return df
 
-# update datasets: will be useful when making website
-def update_data(dataset='all'):
-    '''Pulls data from online sources and adds new data points to existing
-    data files.
+# dependent variable cleaner
+def clean_dep_data():
+    '''Creates a clean version of the dependent raw dependent variable data.
+    The clean version is necessary to use other fed_tools with dep vars.
     '''
-    pass
+    # for now, this just cleans dep_var data from my local, raw files
+    raw = {'3m':        {'file':'DTB3.csv',
+                         'date':'DATE',
+                         'val' :'DTB3'},
+           '10y':       {'file':'DGS10.csv',
+                         'date':'DATE',
+                         'val' :'DGS10'},
+           'fedfunds':  {'file':'DFF.csv',
+                         'date':'DATE',
+                         'val' :'DFF'},
+           'sp500':     {'file':'^GSPC.csv',
+                         'date':'Date',
+                         'val' :'Adj Close'}}
 
-# add new tools here
+    for key,new_file in dep_var_data.items():
+        # load raw file
+        df = pd.read_csv(directory+'data/'+raw[key]['file'])
+        # rename columns to desired names
+        df.rename({raw[key]['date']:'date',raw[key]['val']:'val'},
+                  axis='columns',inplace=True)
+        # save clean file under desired name
+        df.to_csv(directory+'data'+dep_var_data[key],
+                  columns=['date','val'],
+                  index=False)
+
+# TODO
+# update datasets: will be useful when making website
+def update_data(all_data=True,data_sets=[]):
+    '''Updates data from online sources
+    '''
+    if all_data:
+        val = 1
+    else:
+        val = 1
+    return 0
