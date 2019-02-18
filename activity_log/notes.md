@@ -31,3 +31,12 @@ Created repository and started working. Things accomplished:
 	* Make sure to give data file these names: `T-bill_3m.csv`, `T-bill_10y.csv`, `fedfunds.csv`, `sp500_dailyclose.csv`
 * Clean up some scripts in the Preliminary Text Analysis notebook and start a mini module of useful functions.
 * Once module and dependent variables are done, start trying some supervised learning models (NNs if you have time).
+
+### Finished
+* Didn't actually have much time, but started a few functions for `fed_tools.py`. Keep at it tomorrow.
+
+## Feb 18 2019
+
+### Goals for today
+* Continue implementing functions on `fed_tools.py`.
+* Obtain dependent variable data and store in `Fed-NLP-Scrape/data/` for now.

@@ -1,0 +1,5 @@
+# Ignore these raw data files
+^GSPC.csv
+DFF.csv
+DGS10.csv
+DTB3.csv

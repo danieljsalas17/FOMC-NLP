@@ -5,6 +5,19 @@
 # fed_tools is a module that contains functions, classes, and other useful
 # tools that I use often on this Fed-NLP-Scrape project.
 
+# TODO
+#------
+# * API's
+    # * Look into FRED api for daily updates of data (specifically fed_funds)
+    # * Look into US Treasury API (or FRED) for daily updates of T-bill rates
+    # * Look into a S&P 500 data update API
+    # * For now, using these:
+        # * 3m: https://fred.stlouisfed.org/series/DTB3
+        # * 10y: https://fred.stlouisfed.org/series/DGS10/
+        # * fedfunds: https://fred.stlouisfed.org/series/DFF
+        # * sp500: https://finance.yahoo.com/quote/%5EGSPC/history?period1=-630961200&period2=1550466000&interval=1d&filter=history&frequency=1d
+
+#-------------------------------------------------------------------------------
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -57,11 +70,14 @@ def get_sample_df(dependent_vars=None,tfidf=False):
 
     # add dependent variables
     if type(dependent_vars)==type(''):
+        # str case: only one dep_var added
         add_dependent_var(df,dep_var)
     elif: type(dependent_vars)==type(['','']):
+        # list case: at least one dep_var added
         for dep_var in dependent_vars:
             add_dependent_var(df,dep_var)
     elif: type(dependent_vars)==type({'': (1,1)}):
+        # dictionary case: at least one dep_var and custom lags added
         for dep_var,lags in dependent_vars.items():
             add_dependent_var(df,dep_var,back_lags=lags[0],fwd_lags=lags[1])
     # convert text data to tfidf
