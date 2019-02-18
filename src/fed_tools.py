@@ -6,7 +6,7 @@
 # tools that I use often on this Fed-NLP-Scrape project.
 
 # TODO
-#------
+##------
 # * API's
     # * Look into FRED api for daily updates of data (specifically fed_funds)
     # * Look into US Treasury API (or FRED) for daily updates of T-bill rates
@@ -17,6 +17,10 @@
         # * fedfunds: https://fred.stlouisfed.org/series/DFF
         # * sp500: https://finance.yahoo.com/quote/%5EGSPC/history?period1=-630961200&period2=1550466000&interval=1d&filter=history&frequency=1d
 
+# * optimize add_dependent_var: right now it loads the entire dataset into a
+# separate dataframe and then matches on dates. Selective loading could speed it
+# up, but the datasets aren't that big, so not a huge problem right now
+
 #-------------------------------------------------------------------------------
 import numpy as np
 import pandas as pd
@@ -25,7 +29,12 @@ import matplotlib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import PCA, NMF
 import Stemmer
+from datetime import datetime
+from datetime import timedelta
 plt.style.use('ggplot')
+
+# All file access commands start here
+directory = '~/Projects/Fed-NLP-Scrape/'
 
 # better TfidfVectorizer
 english_stemmer = Stemmer.Stemmer('en')
@@ -63,7 +72,7 @@ def get_sample_df(dependent_vars=None,tfidf=False):
     df: pandas.DataFrame object
     '''
     # read data into dataframe
-    df = pd.read_json('~/Projects/Fed-NLP-Scrape/data/fed_sample_statements.json')
+    df = pd.read_json(directory+'data/fed_sample_statements.json')
     df.sort_index(inplace=True)
     df.rename({'data':'date'},axis='columns')
     df.date = pd.to_datetime(df.date)
@@ -121,4 +130,25 @@ def add_dependent_var(df,dep_var,back_lags=0,fwd_lags=0):
         - contains new columns with dep var data
     '''
     # implement date functions so that correct data is added
-    pass
+    # sp500 data doesn't change on weekends, I think. Hopefully not issue
+    start_date = df.date.min() - timedelta(days=back_lags)
+    end_date = df.date.max() + timedelta(days=fwd_lags)
+
+    # load dependent variable data
+    dep_df = pd.read_csv(directory+'data/'+dep_var_data[dep_var],
+                         parse_dates=['date'])
+
+    # match dep_var to df
+    df.merge(dep_df,on='date')
+    df.rename({'val':dep_var},axis='columns')
+
+    # lags
+    for back_lag in range(1,back_lags+1):
+        dep_df.date = dep_df.date + timedelta(days=back_lag)
+        df.merge(dep_df,on='date')
+        df.rename({'val':dep_var+'_B{}'.format(back_lag))
+    for fwd_lag in range(1,fwd_lags+1):
+        dep_df.date = dep_df.date + timedelta(days=fwd_lag)
+        df.merge(dep_df,on='date')
+        df.rename({'val':dep_var+'_F{}'.format(fwd_lag))
+    return df
