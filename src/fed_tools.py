@@ -100,6 +100,7 @@ def get_sample_df(dependent_vars=None,tfidf=False):
     return df
 
 # Dependent Variables Dataset Names
+# datasets must have only 2 columns: date and val
 dep_var_data = {'3m':'T-bill_3m.csv',
                 '10y':'T-bill_10y.csv',
                 'fedfunds':'fedfunds.csv',
@@ -131,8 +132,8 @@ def add_dependent_var(df,dep_var,back_lags=0,fwd_lags=0):
     '''
     # implement date functions so that correct data is added
     # sp500 data doesn't change on weekends, I think. Hopefully not issue
-    start_date = df.date.min() - timedelta(days=back_lags)
-    end_date = df.date.max() + timedelta(days=fwd_lags)
+    # eventually want to speed up loading so that not whole dependent variable
+    # dataset is loaded for this function.
 
     # load dependent variable data
     dep_df = pd.read_csv(directory+'data/'+dep_var_data[dep_var],
@@ -142,13 +143,24 @@ def add_dependent_var(df,dep_var,back_lags=0,fwd_lags=0):
     df.merge(dep_df,on='date')
     df.rename({'val':dep_var},axis='columns')
 
-    # lags
+    # backward lags
     for back_lag in range(1,back_lags+1):
         dep_df.date = dep_df.date + timedelta(days=back_lag)
         df.merge(dep_df,on='date')
         df.rename({'val':dep_var+'_B{}'.format(back_lag))
+    # forward lags
     for fwd_lag in range(1,fwd_lags+1):
         dep_df.date = dep_df.date + timedelta(days=fwd_lag)
         df.merge(dep_df,on='date')
         df.rename({'val':dep_var+'_F{}'.format(fwd_lag))
+
     return df
+
+# update datasets: will be useful when making website
+def update_data(dataset='all'):
+    '''Pulls data from online sources and adds new data points to existing
+    data files.
+    '''
+    pass
+
+# add new tools here
