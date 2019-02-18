@@ -195,7 +195,7 @@ def clean_dep_data():
         df.rename({raw[key]['date']:'date',raw[key]['val']:'val'},
                   axis='columns',inplace=True)
         # save clean file under desired name
-        df.to_csv(directory+'data'+dep_var_data[key],
+        df.to_csv(directory+'data/'+dep_var_data[key],
                   columns=['date','val'],
                   index=False)
 
